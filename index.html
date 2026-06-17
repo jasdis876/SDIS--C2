@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JASDIS – Component II: STI Clinical Management</title>
+  <style>
+    :root {
+      --bg: #f4f8fb; --card: #fff; --ink: #102033; --muted: #4a6a7e;
+      --brand: #0b5d8e; --brand2: #0aa6c8; --accent: #f3b21a;
+      --ok: #14824b; --bad: #b42318; --line: #dce8f1;
+      --shadow: 0 8px 30px rgba(8,39,66,.10); --radius: 18px;
+    }
+    .dark {
+      --bg: #091622; --card: #102235; --ink: #eef7ff; --muted: #a8bbca;
+      --brand: #31b8e0; --brand2: #68d5e8; --accent: #ffc857;
+      --ok: #35c47c; --bad: #ff7b72; --line: #254158;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Segoe UI', Roboto, Inter, system-ui, sans-serif; transition: background .2s; }
+    .app { display: flex; min-height: 100vh; }
+    .side {
+      position: sticky; top: 0; height: 100vh; width: 280px; flex-shrink: 0;
+      background: linear-gradient(180deg, #08335b, #075b83 55%, #0aa6c8);
+      color: white; padding: 18px 14px; overflow: auto; z-index: 10;
+    }
+    .logo { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .mark {
+      width: 44px; height: 44px; border-radius: 14px;
+      background: conic-gradient(from 90deg, var(--accent), #fff, var(--brand2), var(--accent));
+      display: grid; place-items: center; color: #073457; font-weight: 900; font-size: 20px;
+    }
+    .small { font-size: 12px; opacity: .8; }
+    .side select {
+      width: 100%; padding: 8px 12px; border-radius: 30px; border: 0;
+      background: rgba(255,255,255,.15); color: white; font-weight: 500;
+      cursor: pointer; font-size: 14px;
+    }
+    .side select option { background: #0b5d8e; color: white; }
+    .side .btn-row { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0; }
+    .side .btn-row button {
+      background: rgba(255,255,255,.15); border: 0; color: white;
+      padding: 4px 14px; border-radius: 30px; cursor: pointer; font-size: 13px;
+    }
+    .main { flex: 1; padding: 24px 32px 60px; max-width: 1000px; margin: 0 auto; }
+    .top-bar {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+      gap: 12px; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--line);
+    }
+    .top-bar .title { font-size: 22px; font-weight: 700; }
+    .top-bar .sub { font-size: 14px; color: var(--muted); }
+    .controls-row {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      background: var(--card); padding: 10px 16px; border-radius: 40px;
+      border: 1px solid var(--line); box-shadow: var(--shadow);
+    }
+    .controls-row select, .controls-row input { border-radius: 30px; border: 1px solid var(--line); padding: 4px 10px; background: var(--bg); color: var(--ink); }
+    .btn {
+      border: 0; border-radius: 30px; padding: 6px 16px; background: var(--brand); color: white;
+      cursor: pointer; font-weight: 500; transition: .15s;
+    }
+    .btn:hover { filter: brightness(1.1); }
+    .btn.ok { background: var(--ok); }
+    .btn.warn { background: var(--accent); color: #132; }
+    .btn.outline { background: transparent; border: 1px solid var(--line); color: var(--ink); }
+    .unit-block {
+      background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 24px 28px; margin-bottom: 32px;
+      scroll-margin-top: 20px;
+    }
+    .unit-block h2 { font-size: 22px; margin: 0 0 4px; color: var(--brand); }
+    .unit-block .terms { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 14px; }
+    .unit-block .terms span { background: rgba(10,166,200,.12); padding: 2px 12px; border-radius: 30px; font-size: 13px; }
+    .unit-block .lesson { line-height: 1.6; }
+    .unit-block .lesson table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+    .unit-block .lesson th, .unit-block .lesson td { border: 1px solid var(--line); padding: 8px 10px; }
+    .unit-block .lesson th { background: var(--bg); }
+    .unit-block .lesson ul, .unit-block .lesson ol { padding-left: 22px; }
+    .unit-block .lesson .scenario { background: rgba(243,178,26,.08); border-left: 4px solid var(--accent); padding: 12px 16px; border-radius: 8px; margin: 12px 0; }
+    .quiz-wrap { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 16px; display: none; }
+    .quiz-wrap .q { margin: 12px 0; }
+    .quiz-wrap .q label { display: block; padding: 6px 12px; margin: 4px 0; border: 1px solid var(--line); border-radius: 30px; cursor: pointer; transition: .1s; }
+    .quiz-wrap .q label:hover { background: var(--bg); }
+    .quiz-wrap .q label input { margin-right: 10px; }
+    .feedback { padding: 10px 14px; border-radius: 30px; margin: 10px 0; }
+    .feedback.ok { background: rgba(20,130,75,.12); color: var(--ok); }
+    .feedback.bad { background: rgba(180,35,24,.12); color: var(--bad); }
+    .cert-box { background: linear-gradient(135deg, rgba(11,93,142,.08), rgba(243,178,26,.08)); border: 1px dashed var(--brand); border-radius: var(--radius); padding: 16px 20px; margin-top: 16px; }
+    .footer { text-align: center; font-size: 13px; color: var(--muted); padding: 20px 0 10px; border-top: 1px solid var(--line); margin-top: 30px; }
+    #scrollProgress { position: fixed; bottom: 20px; right: 20px; background: var(--card); border: 1px solid var(--line); border-radius: 30px; padding: 6px 16px; font-size: 13px; box-shadow: var(--shadow); z-index: 100; }
+    @media (max-width: 800px) {
+      .app { flex-direction: column; }
+      .side { position: relative; height: auto; width: 100%; padding: 12px; }
+      .main { padding: 16px; }
+      .unit-block { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+<div class="app" id="app">
+  <aside class="side">
+    <div class="logo"><div class="mark">J</div><div><div style="font-weight:700;">JASDIS</div><div class="small">Component II – STI Clinical</div></div></div>
+    <div class="btn-row">
+      <button onclick="toggleDark()">🌓</button>
+      <button onclick="resetProgress()">↺ Reset</button>
+    </div>
+    <label for="unitDropdown" style="font-weight:600;font-size:14px;display:block;margin-bottom:4px;">📑 Jump to Unit</label>
+    <select id="unitDropdown"></select>
+    <div style="margin-top:14px;font-size:12px;opacity:.7;">Progress auto‑saved. Read‑aloud reads only lesson content (no buttons).</div>
+  </aside>
+  <main class="main" id="main">
+    <div class="top-bar">
+      <div><div class="title">🔬 Component II – STI Clinical Management</div><div class="sub">40 units • syndromic approach • CI application</div></div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <span id="progressLabel" style="font-weight:600;">0/40</span>
+        <button class="btn ok" onclick="scrollToTop()">⬆ Top</button>
+      </div>
+    </div>
+    <div class="controls-row" style="margin-bottom:24px; justify-content:space-between; flex-wrap:wrap;">
+      <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+        <button class="btn" id="playBtn">▶ Play</button>
+        <button class="btn outline" id="pauseBtn">⏸</button>
+        <button class="btn outline" id="resumeBtn">▶▶</button>
+        <button class="btn outline" id="stopBtn">⏹</button>
+        <select id="voiceSelect" style="min-width:160px;"></select>
+        <label>Speed <input type="range" id="rateControl" min="0.5" max="2" step="0.05" value="1" style="width:80px;"></label>
+        <label>Pitch <input type="range" id="pitchControl" min="0.5" max="2" step="0.05" value="1" style="width:80px;"></label>
+      </div>
+      <div id="voiceStatus" style="font-size:13px;color:var(--muted);">⏹ idle</div>
+    </div>
+    <div id="unitsContainer"></div>
+    <div id="certificateArea" style="margin-top:20px;"></div>
+    <div class="footer">© JASDIS – Jamaica Association of Social Disease Intervention Specialists. Always follow current MOHW guidance and supervisor direction.</div>
+  </main>
+</div>
+<div id="scrollProgress">📌 0%</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+// ============================================================
+// COMPONENT II – ALL 40 UNITS (FULL CONTENT)
+// ============================================================
+const allUnits = [
+  // ---- Unit 1 ----
+  { n:1, title:"Approach to the Client with a Suspected STI", terms:["STI client","Syndrome","CI role","Partner services"], lesson:`<p><strong>Definition</strong><br>An STI client is any person who presents with symptoms, signs, laboratory results, or exposure history suggesting a sexually transmitted infection.</p><p><strong>Purpose of STI Assessment</strong><br>The assessment aims to identify the syndrome, treat promptly, prevent complications, reduce transmission, identify and treat partners, screen for HIV and syphilis, refer priority cases to the CI, and improve surveillance.</p><p><strong>CI Role</strong><br>The CI should not replace the clinician, but must understand the clinical pathway so that partner services and public health follow-up are accurate. The CI supports confidential interviewing, partner elicitation, prevention counselling, contact referral, completion of IR/FR where needed, STI summary reporting, case follow-up, and social harm assessment.</p>`, quiz:[{q:"What is the main purpose of STI assessment?",opts:["Identify the syndrome, treat, prevent complications, and reduce transmission","Only treat symptoms","Avoid partner notification","Replace laboratory testing"],correct:0},{q:"The CI's role in STI management includes:",opts:["Confidential interviewing and partner elicitation","Clinical prescribing","Surgical assistance","Laboratory diagnosis"],correct:0},{q:"Which is a priority for CI referral?",opts:["HIV and infectious syphilis","Candidiasis only","Scabies only","Pediculosis only"],correct:0},{q:"Why should CIs understand clinical pathways?",opts:["To support accurate partner services and public health follow-up","To replace clinicians","To prescribe treatment","To avoid documentation"],correct:0},{q:"What should be offered to all suspected STI clients?",opts:["HIV and syphilis testing","Malaria test only","Eye exam only","Blood culture only"],correct:0}] },
+  // ---- Unit 2 ----
+  { n:2, title:"STI History Taking", terms:["Sexual history","Exposure sites","PrEP","IPV"], lesson:`<p><strong>Why STI History Matters</strong><br>A good STI history helps determine likely syndrome, anatomical sites of exposure, risk of reinfection, partner notification needs, HIV and syphilis testing needs, PrEP eligibility, safety concerns, and need for urgent referral.</p><p><strong>Medical History Checklist</strong><br>Include: name, age, date of birth, sex at birth, gender identity, address, telephone, occupation, living arrangement, reason for visit, symptoms and duration, recent self-treatment or antibiotics, allergies, chronic illness, pregnancy history, LMP, contraceptive use, HPV/HBV vaccination, STI history, blood transfusion, substance use, GBV/IPV history.</p><p><strong>Sexual History Checklist</strong><br>Ask about: current sexual activity, date of last sexual exposure, number of partners, sex of partners, type of partners (regular, casual, transactional, anonymous), type of sexual contact (vaginal, anal, oral, other), anatomical sites of exposure, condom use, PrEP use, partner on ART or PrEP, partner with STI symptoms, known HIV-positive partner, history of IPV or sexual coercion.</p><p><strong>Better CI Language</strong><br>Instead of "Are you promiscuous?" use "How many sexual partners have you had in the last three months?" Instead of "Are you gay?" use "Do you have sex with men, women, or both?"</p>`, quiz:[{q:"A good STI history helps determine:",opts:["Likely syndrome and exposure sites","Only the client's name","Only the client's occupation","Only vaccination status"],correct:0},{q:"Which should be asked in a sexual history?",opts:["Type of sexual contact and anatomical sites","Only age","Only address","Only LMP"],correct:0},{q:"Better CI language for asking about partners includes:",opts:["Do you have sex with men, women, or both?","Are you promiscuous?","Are you gay?","How many mistakes have you made?"],correct:0},{q:"Why should CIs ask about IPV in STI history?",opts:["To assess safety before partner notification","To judge the client","To avoid documentation","To replace clinical care"],correct:0},{q:"Which is important to document in medical history?",opts:["Allergies and chronic illness","Only age","Only telephone number","Only occupation"],correct:0}] },
+  // ---- Unit 3 ----
+  { n:3, title:"Common STI Signs and Symptoms", terms:["Discharge","Dysuria","Sores","Rash","Glands"], lesson:`<p><strong>In Men</strong><br>Common symptoms include urethral discharge, dysuria, genital sores, water bumps or vesicles, scrotal pain, rectal discharge, rectal pain or bleeding, rash on palms, soles, or body, genital warts, swollen glands, and sore throat after oral exposure.</p><p><strong>In Women</strong><br>Common symptoms include vaginal discharge, vulval itching, dysuria, lower abdominal pain, pain during sex, genital sores, abnormal bleeding, vaginal odour, rectal discomfort or discharge, genital warts, rash, and swollen glands.</p><p><strong>Important CI Point</strong><br>Absence of symptoms does not mean absence of infection. Many contacts are asymptomatic and still require testing or epidemiologic treatment.</p>`, quiz:[{q:"A common symptom of STI in men is:",opts:["Urethral discharge","Vaginal discharge","Pelvic pain","Abnormal bleeding"],correct:0},{q:"A common symptom of STI in women is:",opts:["Lower abdominal pain","Urethral discharge only","Scrotal pain","Penile discharge"],correct:0},{q:"Why are asymptomatic infections important in CI work?",opts:["They can still be transmitted","They are not infectious","They are always cured","They do not matter"],correct:0},{q:"A common sign of secondary syphilis is:",opts:["Rash on palms and soles","Only vaginal discharge","Only urethral discharge","Only scrotal pain"],correct:0},{q:"Which symptom suggests oral STI exposure?",opts:["Sore throat after oral exposure","Vaginal discharge","Scrotal pain","Rectal bleeding"],correct:0}] },
+  // ---- Unit 4 ----
+  { n:4, title:"Syndromic Management", terms:["Syndromic management","Algorithm","Aetiologic","CI role"], lesson:`<p><strong>Definition</strong><br>Syndromic management treats patients based on groups of symptoms and signs rather than waiting for laboratory confirmation.</p><p><strong>Why Jamaica Uses It</strong><br>Syndromic management is useful because it allows treatment at first visit, reduces loss to follow-up, treats likely mixed infections, is practical for primary care, and supports rapid public health control.</p><p><strong>Advantages</strong><br>Fast, practical, reduces transmission, useful where labs are limited, supports same-day treatment, easy to train and monitor.</p><p><strong>Limitations</strong><br>May overtreat, may miss asymptomatic infections, less precise than aetiologic diagnosis, vaginal discharge syndrome is less specific, does not provide antimicrobial resistance data unless cultures are done.</p><p><strong>CI Role</strong><br>The CI should understand what syndrome was diagnosed, know which infections are likely, know when contacts need treatment, know which cases are priority, ensure HIV and syphilis testing were offered, and promote partner treatment and prevention.</p>`, quiz:[{q:"Syndromic management treats based on:",opts:["Groups of symptoms and signs","Only laboratory results","Only patient preference","Only age"],correct:0},{q:"An advantage of syndromic management is:",opts:["Fast treatment at first visit","Delayed diagnosis","Increased loss to follow-up","Only for hospital use"],correct:0},{q:"A limitation of syndromic management is:",opts:["May miss asymptomatic infections","Always specific","Never overtreats","Only used in private clinics"],correct:0},{q:"The CI should understand syndromic management to:",opts:["Know which infections are likely and support partner services","Replace the clinician","Avoid documentation","Prescribe treatment"],correct:0},{q:"Syndromic management is especially useful in Jamaica because:",opts:["It is practical for primary care and rapid control","It requires extensive laboratories","It is expensive","It delays treatment"],correct:0}] },
+  // ---- Unit 5 ----
+  { n:5, title:"STI Screening Algorithm", terms:["Algorithm","Risk assessment","Examination","Referral"], lesson:`<p><strong>Text Algorithm</strong><br>1. Client presents with possible STI or exposure.<br>2. Take history and risk assessment.<br>3. Examine client where clinically appropriate.<br>4. If STI-related findings are present, use the relevant syndrome algorithm.<br>5. If laboratory support is available, collect appropriate tests.<br>6. Treat as indicated.<br>7. Educate client.<br>8. Screen for HIV and syphilis.<br>9. Refer infectious syphilis, HIV, multiple partners, pregnancy-related syphilis, childhood STI, congenital syphilis, and ophthalmia neonatorum to CI.<br>10. Document and report.</p><p><strong>Key Rule</strong><br>Clients with infectious syphilis, HIV, or multiple partners should be referred for Contact Investigation.</p>`, quiz:[{q:"What is the first step in the STI screening algorithm?",opts:["Client presents with possible STI or exposure","Collect lab tests","Refer to CI","Close the case"],correct:0},{q:"Which clients should be referred to the CI?",opts:["Infectious syphilis, HIV, multiple partners","All clients with mild symptoms","Only pregnant women","Only men"],correct:0},{q:"When should laboratory tests be collected?",opts:["If laboratory support is available","Never","Only after treatment","Only at the end"],correct:0},{q:"What should be done after treatment?",opts:["Educate client and screen for HIV/syphilis","Close the case","Ignore partners","Only document"],correct:0},{q:"The key rule for referral states:",opts:["Clients with infectious syphilis, HIV, or multiple partners should be referred","All clients should be referred","Only pregnant women should be referred","No one should be referred"],correct:0}] },
+  // ---- Unit 6 ----
+  { n:6, title:"Urethral Discharge Syndrome", terms:["Urethral discharge","Dysuria","Gonorrhoea","Chlamydia","Ceftriaxone"], lesson:`<p><strong>Case Definition</strong><br>Urethral discharge syndrome includes urethral discharge, dysuria, tingling or burning in urethra, mucoid, purulent, or blood-stained discharge, sometimes no visible discharge but symptoms or exposure history.</p><p><strong>Common Causes</strong><br>Gonorrhoea, chlamydia, Mycoplasma genitalium, trichomoniasis, other non-gonococcal urethritis causes.</p><p><strong>Current Treatment</strong><br>Recommended: Ceftriaxone 1 g IM stat PLUS Doxycycline 100 mg orally twice daily for 7 days. Substitutes may include Cefixime 800 mg orally stat PLUS Azithromycin 2 g orally stat.</p><p><strong>If symptoms persist without reinfection:</strong> Swab/test for gonorrhoea and chlamydia where available. Re-treat according to persistent discharge guidance. Consider resistant gonorrhoea, non-adherence, untreated partner, or reinfection.</p><p><strong>CI Considerations</strong><br>Ensure all recent partners are examined and treated. Ask about partners in the last three months. Screen for HIV and syphilis. Discuss condom use. Assess PrEP eligibility. Explain abstinence or condom use until treatment completion.</p>`, quiz:[{q:"Urethral discharge syndrome commonly affects:",opts:["Males with discharge or dysuria","Females only","Neonates only","Older adults only"],correct:0},{q:"The recommended treatment for urethral discharge covers:",opts:["Gonorrhoea and chlamydia","Syphilis only","HIV only","Candidiasis only"],correct:0},{q:"A common cause of urethral discharge is:",opts:["Chlamydia","Scabies","Pediculosis","Candidiasis"],correct:0},{q:"If symptoms persist after treatment, the CI should first consider:",opts:["Non-adherence, untreated partner, or reinfection","Drug resistance only","Pregnancy","Malaria"],correct:0},{q:"CI considerations for urethral discharge include:",opts:["Ensure partners are examined and treated","Only treat the index case","Avoid HIV testing","Only document"],correct:0}] },
+  // ---- Unit 7 ----
+  { n:7, title:"Persistent Urethral Discharge", terms:["Persistent","Reassessment","Adherence","Partner","Resistance"], lesson:`<p><strong>Definition</strong><br>Discharge that persists or returns after treatment.</p><p><strong>Key Questions</strong><br>Did the client complete medication? Did vomiting occur after medication? Was there unprotected sex after treatment? Was partner treated? Was the correct treatment used? Were there new partners? Was culture/NAAT done if available?</p><p><strong>Management Logic</strong><br>If treatment was not completed or partner was untreated: Re-treat and ensure partner management. If treatment was completed and no re-exposure occurred: Investigate resistant gonorrhoea/chlamydia. Test where available. Refer if persistent.</p><p><strong>CI Role</strong><br>Persistent discharge is often a partner management failure until proven otherwise.</p>`, quiz:[{q:"Persistent discharge is often caused by:",opts:["Partner not treated or reinfection","Drug resistance only","Malaria","Food poisoning"],correct:0},{q:"A key question for persistent discharge is:",opts:["Was the partner treated?","What is the client's occupation?","How old is the client?","What is the client's height?"],correct:0},{q:"If treatment was completed and no re-exposure occurred, consider:",opts:["Resistant gonorrhoea/chlamydia","Pregnancy","Vaccination","Blood transfusion"],correct:0},{q:"The CI should view persistent discharge as:",opts:["Often a partner management failure","Always treatment failure","Always resistance","Never relevant"],correct:0},{q:"Which is NOT a key question for persistent discharge?",opts:["What is the client's favourite colour?","Did the client complete medication?","Was the partner treated?","Was there unprotected sex after treatment?"],correct:0}] },
+  // ---- Unit 8 ----
+  { n:8, title:"Cervico-Vaginal Discharge Syndrome", terms:["Cervico-vaginal","Discharge","Cervicitis","Vaginitis","Risk score"], lesson:`<p><strong>Definition</strong><br>Cervico-vaginal discharge syndrome includes abnormal discharge from the vagina or cervix.</p><p><strong>Common Causes</strong><br>Cervicitis: gonorrhoea, chlamydia. Vaginitis: trichomoniasis, bacterial vaginosis, candidiasis.</p><p><strong>Key Clinical Features</strong><br>Gonorrhoea/chlamydia cervicitis: mucopus, cervical erosion, contact bleeding. Trichomoniasis: frothy discharge, irritation, odour. Bacterial vaginosis: fishy odour, thin discharge. Candidiasis: thick white curd-like discharge, itching.</p><p><strong>Risk Score Factors</strong><br>Partner has urethral discharge, new partner in last three months, more than one partner in last three months, not living with steady partner, age under 25 years.</p><p><strong>Current Treatment for Cervico-Vaginal Discharge with Cervicitis Risk</strong><br>Recommended: Ceftriaxone 1 g IM stat PLUS Doxycycline 100 mg orally twice daily for 7 days PLUS Metronidazole 500 mg orally twice daily for 7 days. If cervicitis is present, extend doxycycline and metronidazole to 14 days.</p><p><strong>CI Considerations</strong><br>Screen for HIV and syphilis. Assess pregnancy. Ensure partner treatment. Discuss condom use. Consider PrEP referral. Refer persistent cases to gynaecology. Ensure Pap smear referral if indicated.</p>`, quiz:[{q:"Cervico-vaginal discharge syndrome includes:",opts:["Abnormal vaginal or cervical discharge","Only urethral discharge","Only scrotal pain","Only rectal discharge"],correct:0},{q:"Which is a risk factor for cervico-vaginal discharge?",opts:["Partner has urethral discharge","Age over 60","Married only","No sexual activity"],correct:0},{q:"Recommended treatment for cervico-vaginal discharge with cervicitis risk includes:",opts:["Ceftriaxone + doxycycline + metronidazole","BPG only","Metronidazole only","Acyclovir only"],correct:0},{q:"If cervicitis is present, treatment should be extended to:",opts:["14 days","3 days","1 day","30 days"],correct:0},{q:"CI considerations for cervico-vaginal discharge include:",opts:["Ensure partner treatment and HIV/syphilis testing","Treat only the index client","Ignore pregnancy status","Avoid condom discussion"],correct:0}] },
+  // ---- Unit 9 ----
+  { n:9, title:"Vaginal Discharge Syndrome (BV, Trich, Candida)", terms:["Bacterial vaginosis","Trichomoniasis","Candidiasis","Metronidazole"], lesson:`<p><strong>Bacterial Vaginosis</strong><br>Treatment: Metronidazole 400 mg or 500 mg orally twice daily for 7 days. Substitutes: Clindamycin 300 mg twice daily for 7 days, Metronidazole 2 g stat. CI Note: BV is not always strictly sexually transmitted, but sexual behaviour can influence recurrence.</p><p><strong>Trichomoniasis</strong><br>Treatment: Metronidazole 2 g orally single dose OR Metronidazole 400–500 mg twice daily for 7 days. CI Note: Partners should be treated. Reinfection is common if partners are not treated.</p><p><strong>Candidiasis</strong><br>Treatment: Clotrimazole vaginal tablet 100 mg nightly for 7 nights OR Miconazole vaginal pessary 200 mg nightly for 3 nights. Substitutes: Fluconazole 150–200 mg single dose, Nystatin vaginal tablet. CI Note: Candidiasis is not always sexually transmitted. Recurrent candidiasis may require clinical review and assessment for diabetes, pregnancy, antibiotics, or HIV.</p>`, quiz:[{q:"Bacterial vaginosis is treated with:",opts:["Metronidazole","Ceftriaxone","BPG","Acyclovir"],correct:0},{q:"Trichomoniasis treatment requires:",opts:["Partner treatment","Only index treatment","No treatment","Only condoms"],correct:0},{q:"Candidiasis is commonly treated with:",opts:["Clotrimazole or miconazole","Ceftriaxone","Doxycycline","BPG"],correct:0},{q:"Recurrent candidiasis may indicate:",opts:["Diabetes, pregnancy, antibiotics, or HIV","Syphilis","Gonorrhoea","Chlamydia"],correct:0},{q:"Which infection is NOT always sexually transmitted?",opts:["Candidiasis","Gonorrhoea","Chlamydia","Syphilis"],correct:0}] },
+  // ---- Unit 10 ----
+  { n:10, title:"Anal Discharge Syndrome", terms:["Anal discharge","Proctitis","Receptive anal sex","LGV","PrEP"], lesson:`<p><strong>Definition</strong><br>Anal discharge syndrome includes rectal discharge, pain, bleeding, proctitis, or symptoms after receptive anal sex.</p><p><strong>Common Causes</strong><br>Gonorrhoea, chlamydia, LGV, herpes simplex, syphilis, other enteric organisms.</p><p><strong>Assessment</strong><br>Take sexual history. Ask about receptive anal sex. Perform genital and anal examination. Do DRE. Perform anoscopy if available. Screen for HIV and syphilis. Assess PrEP need.</p><p><strong>Treatment</strong><br>Recommended: Ceftriaxone 1 g IM stat PLUS Doxycycline 100 mg orally twice daily for 7 days. Alternative: Cefixime 800 mg orally stat PLUS Azithromycin 2 g orally stat. If ulcers or bleeding are present, add treatment for genital ulcer disease as indicated.</p><p><strong>CI Considerations</strong><br>Avoid assumptions about sexual orientation. Ask behaviour-based questions. Discuss PrEP. Discuss condoms and lubricants. Ensure partners are tested and treated. Consider stigma and safety.</p>`, quiz:[{q:"Anal discharge syndrome commonly occurs after:",opts:["Receptive anal sex","Vaginal sex only","Oral sex only","Skin contact"],correct:0},{q:"Treatment for anal discharge includes:",opts:["Ceftriaxone + doxycycline","BPG only","Metronidazole only","Acyclovir only"],correct:0},{q:"Which STI can cause anal discharge?",opts:["LGV","Scabies","Pediculosis","Candidiasis"],correct:0},{q:"CI should ask about anal sex:",opts:["Using behaviour-based questions","Avoid the topic","Assume heterosexual","Only for women"],correct:0},{q:"CI considerations for anal discharge include:",opts:["Discuss PrEP and condoms","Only treat index case","Avoid HIV testing","Skip partner treatment"],correct:0}] },
+  // ---- Unit 11 ----
+  { n:11, title:"Lower Abdominal Pain / PID Syndrome", terms:["PID","Lower abdominal pain","Emergency","Cervical motion tenderness"], lesson:`<p><strong>Definition</strong><br>PID is infection involving the upper female genital tract: endometrium, fallopian tubes, ovaries, pelvic peritoneum.</p><p><strong>Symptoms</strong><br>Lower abdominal pain, pelvic pain, dyspareunia, vaginal discharge, fever, abnormal bleeding, cervical motion tenderness, adnexal tenderness.</p><p><strong>Emergency Referral Signs</strong><br>Immediate referral if: Temperature ≥ 38°C or rigors, adolescent, bowel or urinary symptoms, missed or overdue period, pregnancy, recent childbirth or abortion, rebound tenderness or guarding, vaginal bleeding, pelvic mass, severe illness, no improvement after treatment.</p><p><strong>CI Considerations</strong><br>Partners may be asymptomatic. Partner treatment is essential. Reinfection increases risk of infertility. Screen for HIV and syphilis. Encourage follow-up in 3 days or sooner if pain persists. Counsel on the 4 Cs: Comply, Counsel, Condom, Contact.</p>`, quiz:[{q:"PID involves infection of:",opts:["Upper female genital tract","Male urethra only","Skin only","Lungs only"],correct:0},{q:"Which symptom suggests PID?",opts:["Lower abdominal pain and cervical motion tenderness","Scrotal pain","Rectal itching","Upper arm pain"],correct:0},{q:"Which is an emergency referral sign in PID?",opts:["Temperature ≥ 38°C or pregnancy","Mild discharge","No symptoms","Condom use"],correct:0},{q:"Why is partner treatment essential in PID?",opts:["Partners may be asymptomatic","Partners are always immune","Partners never need treatment","Only index case matters"],correct:0},{q:"The 4 Cs of counselling are:",opts:["Comply, Counsel, Condom, Contact","Coffee, Cake, Candy, Cookies","Cause, Cure, Care, Certificate","Clinic, Client, Code, Case"],correct:0}] },
+  // ---- Unit 12 ----
+  { n:12, title:"Testicular Pain", terms:["Testicular pain","Epididymitis","Torsion","Emergency"], lesson:`<p><strong>Importance</strong><br>Testicular pain may be due to STI-related epididymitis, but torsion is a surgical emergency.</p><p><strong>Assessment Logic</strong><br>If testicular pain occurs with discharge: Treat as epididymitis and follow genital discharge syndrome guidance. If unilateral tenderness and no discharge: Rule out testicular torsion urgently. If bilateral tenderness: Consider other causes such as E. coli infection, TB, or hernia.</p><p><strong>CI Considerations</strong><br>Partner management is needed if STI-related. Urgent referral is needed if torsion suspected. Do not delay emergency care for field investigation.</p>`, quiz:[{q:"Testicular pain with discharge suggests:",opts:["Epididymitis","Torsion only","Hernia only","Kidney stone"],correct:0},{q:"Unilateral testicular tenderness without discharge requires:",opts:["Urgent rule-out of torsion","No action","Only condoms","Only rest"],correct:0},{q:"Testicular torsion is a:",opts:["Surgical emergency","Skin condition","Respiratory condition","Psychiatric condition"],correct:0},{q:"CI action for STI-related testicular pain includes:",opts:["Partner management","No follow-up","Avoid documentation","Skip referral"],correct:0},{q:"Which is a cause of testicular pain?",opts:["Epididymitis","Candidiasis","Scabies","Pediculosis"],correct:0}] },
+  // ---- Unit 13 ----
+  { n:13, title:"Genital Ulcer Disease", terms:["GUD","Ulcer","HSV","Syphilis","Chancroid"], lesson:`<p><strong>Definition</strong><br>GUD includes ulcers, sores, vesicles, erosions, or genital bruising.</p><p><strong>Common Causes</strong><br>Syphilis, herpes simplex virus, chancroid, LGV, granuloma inguinale, trauma, non-STI dermatologic causes.</p><p><strong>Assessment</strong><br>Take sexual history. Examine genital, anal, and oral sites. Screen for HIV and syphilis. Check if ulcers are recurrent. Check if vesicles are present. Ask about pain. Ask about self-treatment with chemicals.</p><p><strong>Management Logic</strong><br>If syphilis test is reactive and ulcer present: Treat for syphilis. If vesicles or recurrent shallow painful lesions: Treat for herpes simplex. If ulcer persists or worsens: Refer to STI specialist, dermatologist, or infectious disease specialist.</p><p><strong>Important Counselling</strong><br>Advise clients not to apply bleach, disinfectants, harsh chemicals, or traditional caustic remedies.</p>`, quiz:[{q:"Genital ulcer disease includes:",opts:["Ulcers, sores, vesicles, erosions","Only discharge","Only warts","Only rash"],correct:0},{q:"Which is a common cause of GUD?",opts:["Syphilis","Candidiasis","BV","Scabies"],correct:0},{q:"If syphilis test is reactive with an ulcer, treat for:",opts:["Syphilis","HSV","Chancroid","LGV"],correct:0},{q:"Recurrent painful vesicles suggest:",opts:["Herpes simplex","Syphilis","LGV","Granuloma inguinale"],correct:0},{q:"Clients with GUD should be advised to avoid:",opts:["Bleach and harsh chemicals","Condoms","HIV testing","Partner treatment"],correct:0}] },
+  // ---- Unit 14 ----
+  { n:14, title:"Syphilis", terms:["Syphilis","Treponema pallidum","Stages","BPG","Treatment"], lesson:`<p><strong>Cause</strong><br>Syphilis is caused by Treponema pallidum.</p><p><strong>Transmission</strong><br>Sexual contact with infectious lesions, mother-to-child transmission during pregnancy, rarely through blood exposure.</p><p><strong>Stages</strong><br>Primary: chancre, usually painless. Secondary: rash, mucous patches, condylomata lata, lymphadenopathy. Early latent: no symptoms, infection under 2 years. Late latent: no symptoms, infection 2 years or more. Tertiary: cardiovascular, neurologic, or gummatous disease. Congenital: infection passed from mother to baby.</p><p><strong>Testing</strong><br>Treponemal tests: SD Bioline, TPPA, other point-of-care tests. Non-treponemal tests: TRUST, VDRL.</p><p><strong>Interpretation Principles</strong><br>Reactive treponemal plus reactive non-treponemal test suggests syphilis, treated or untreated. High titre may indicate infectious syphilis. Reactive treponemal with non-reactive TRUST may indicate treated syphilis, very early syphilis, or late latent syphilis. Clinical history and examination are essential.</p><p><strong>Current Treatment</strong><br>Primary, Secondary, Early Latent: Benzathine Penicillin G 2.4 million units IM single dose. Alternatives: Doxycycline 100 mg orally twice daily for 14 days, Erythromycin 500 mg orally four times daily for 14 days. Late Latent and Tertiary without Neurological/Ocular Involvement: BPG 2.4 million units IM once weekly for 3 consecutive weeks. Alternatives: Doxycycline 100 mg orally twice daily for 30 days, Erythromycin 500 mg orally four times daily for 30 days.</p><p><strong>CI Priority</strong><br>Primary syphilis, secondary syphilis, early latent syphilis, pregnant women with reactive syphilis, congenital syphilis, sexual contacts of infectious syphilis cases.</p>`, quiz:[{q:"Syphilis is caused by:",opts:["Treponema pallidum","Neisseria gonorrhoeae","Chlamydia trachomatis","HIV"],correct:0},{q:"Secondary syphilis is characterized by:",opts:["Rash and mucous patches","Chancre only","No symptoms","Cardiovascular damage"],correct:0},{q:"First-line treatment for early syphilis is:",opts:["BPG 2.4 MU IM single dose","Doxycycline 7 days","Ceftriaxone 1g","Metronidazole"],correct:0},{q:"Late latent syphilis is treated with:",opts:["BPG weekly for 3 weeks","BPG single dose","Doxycycline 7 days","No treatment"],correct:0},{q:"Which syphilis cases are CI priority?",opts:["Primary, secondary, early latent, and pregnant women","Only tertiary","Only cardiovascular","Only gummas"],correct:0}] },
+  // ---- Unit 15 ----
+  { n:15, title:"Maternal Syphilis", terms:["Maternal syphilis","Pregnancy","BPG","Congenital syphilis"], lesson:`<p><strong>Why It Is Critical</strong><br>Untreated maternal syphilis can cause miscarriage, stillbirth, prematurity, congenital syphilis, and neonatal death.</p><p><strong>Treatment</strong><br>Primary, Secondary, Early Latent in Pregnancy: Benzathine Penicillin G 2.4 million units IM single dose. Late Latent or Tertiary in Pregnancy: BPG 2.4 million units IM weekly for 3 consecutive doses.</p><p><strong>Key Rule</strong><br>Penicillin is the treatment of choice in pregnancy. If penicillin allergy is reported, refer for specialist review and desensitization.</p><p><strong>CI Actions</strong><br>Treat as urgent. Verify treatment. Interview mother privately. Elicit partner(s). Ensure partner testing and treatment. Support follow-up. Document using appropriate forms. Protect confidentiality.</p>`, quiz:[{q:"Untreated maternal syphilis can cause:",opts:["Miscarriage, stillbirth, and congenital syphilis","Only mild symptoms","No complications","HIV"],correct:0},{q:"Treatment for early syphilis in pregnancy is:",opts:["BPG 2.4 MU IM single dose","Doxycycline 7 days","Metronidazole","Ciprofloxacin"],correct:0},{q:"Penicillin allergy in pregnancy requires:",opts:["Referral for desensitization","Doxycycline","Ceftriaxone","No treatment"],correct:0},{q:"CI actions for maternal syphilis include:",opts:["Elicit partner(s) and ensure partner treatment","Ignore partners","Only treat mother","Avoid documentation"],correct:0},{q:"Maternal syphilis is urgent because:",opts:["It can prevent congenital syphilis","It is not serious","It only affects the mother","It is always curable with any antibiotic"],correct:0}] },
+  // ---- Unit 16 ----
+  { n:16, title:"Congenital Syphilis", terms:["Congenital syphilis","Priority","Mother","Baby","Partner"], lesson:`<p><strong>Definition</strong><br>Congenital syphilis occurs when Treponema pallidum is transmitted from mother to fetus.</p><p><strong>CI Priority</strong><br>Congenital syphilis is a priority condition.</p><p><strong>CI Investigation Steps</strong><br>1. Verify maternal syphilis result. 2. Confirm maternal treatment. 3. Confirm baby evaluation. 4. Ensure baby is referred to physician. 5. Identify and treat maternal partner(s). 6. Complete congenital syphilis investigation report. 7. Follow baby monthly as required. 8. Report through correct channels.</p><p><strong>Common Errors</strong><br>Failing to investigate partner. Assuming mother's treatment automatically protects baby. Delaying investigation until after delivery. Not documenting treatment dates. Not linking mother-infant pair to care.</p>`, quiz:[{q:"Congenital syphilis is transmitted:",opts:["From mother to fetus","From father to fetus","Through breastfeeding only","Through casual contact"],correct:0},{q:"Congenital syphilis is a:",opts:["Priority condition for CI","Minor condition","Non-infectious condition","Non-reportable condition"],correct:0},{q:"CI investigation steps include:",opts:["Verify maternal treatment and baby evaluation","Only treat baby","Ignore partner","Skip documentation"],correct:0},{q:"A common error is:",opts:["Assuming mother's treatment automatically protects baby","Investigating partners","Documenting treatment","Following baby monthly"],correct:0},{q:"Which is part of congenital syphilis investigation?",opts:["Complete investigation report","Only treat mother","Ignore baby","Only call once"],correct:0}] },
+  // ---- Unit 17 ----
+  { n:17, title:"Ophthalmia Neonatorum", terms:["Ophthalmia neonatorum","Newborn","Gonorrhoea","Chlamydia","Partners"], lesson:`<p><strong>Definition</strong><br>Ophthalmia neonatorum is eye infection in a newborn, commonly associated with gonorrhoea or chlamydia exposure during birth.</p><p><strong>Public Health Importance</strong><br>It can cause serious eye damage or blindness if untreated.</p><p><strong>CI Actions</strong><br>Treat as priority. Ensure baby is evaluated. Investigate mother. Identify recent male sexual contacts of mother. Ensure male partners receive epidemiologic treatment. Complete required report. Refer severe cases to hospital.</p><p><strong>Important CI Point</strong><br>Male partners may be asymptomatic but infected.</p>`, quiz:[{q:"Ophthalmia neonatorum affects:",opts:["Newborn eyes","Adult eyes","Ears","Skin"],correct:0},{q:"Ophthalmia neonatorum is commonly caused by:",opts:["Gonorrhoea and chlamydia","Syphilis only","HIV only","Candidiasis"],correct:0},{q:"CI actions for ON include:",opts:["Investigate mother and identify male partners","Only treat baby","Ignore mother","Skip reporting"],correct:0},{q:"Male partners of mothers with ON:",opts:["May be asymptomatic but infected","Are always symptomatic","Never need treatment","Are not relevant"],correct:0},{q:"Ophthalmia neonatorum is a:",opts:["Priority condition","Minor condition","Non-infectious condition","Not reportable"],correct:0}] },
+  // ---- Unit 18 ----
+  { n:18, title:"Herpes Simplex Virus", terms:["HSV","Vesicles","Recurrent","Acyclovir","Counselling"], lesson:`<p><strong>Cause</strong><br>HSV-1 or HSV-2.</p><p><strong>Signs</strong><br>Painful vesicles, shallow ulcers, recurrence at same site, burning or tingling before lesions, painful urination if lesions are near urethra.</p><p><strong>Treatment</strong><br>Acyclovir 400 mg orally three times daily for 7–10 days.</p><p><strong>CI Considerations</strong><br>HSV is chronic and recurrent. Clients need counselling. Condoms reduce but do not eliminate risk. Avoid sex during symptoms. Screen for HIV and syphilis. Pregnancy requires clinical review.</p>`, quiz:[{q:"HSV commonly presents as:",opts:["Painful vesicles and ulcers","Painless chancre","Discharge only","Warts"],correct:0},{q:"Treatment for HSV includes:",opts:["Acyclovir 400 mg TID 7–10 days","BPG","Metronidazole","Ceftriaxone"],correct:0},{q:"HSV is:",opts:["Chronic and recurrent","Always curable with one dose","Never recurrent","Only affects men"],correct:0},{q:"CI counselling for HSV includes:",opts:["Avoid sex during symptoms and use condoms","Only treat partner","No counselling needed","Always disclose publicly"],correct:0},{q:"Pregnancy with HSV requires:",opts:["Clinical review","No action","Only condoms","Only partner treatment"],correct:0}] },
+  // ---- Unit 19 ----
+  { n:19, title:"Chancroid, LGV, and Granuloma Inguinale", terms:["Chancroid","LGV","Granuloma inguinale","Azithromycin","Doxycycline"], lesson:`<p><strong>Chancroid</strong><br>Treatment: Azithromycin 1 g orally single dose.</p><p><strong>LGV</strong><br>Treatment: Doxycycline 100 mg orally twice daily for 21 days.</p><p><strong>Granuloma Inguinale</strong><br>Treatment: Azithromycin 1 g orally once weekly for 3 weeks.</p><p><strong>CI Note</strong><br>These conditions are less common but should be considered when ulcers persist or classical treatment fails.</p>`, quiz:[{q:"Chancroid is treated with:",opts:["Azithromycin 1 g single dose","BPG","Metronidazole","Acyclovir"],correct:0},{q:"LGV treatment requires:",opts:["Doxycycline 100 mg BID for 21 days","Azithromycin 1 g single dose","BPG 7 days","Metronidazole"],correct:0},{q:"Granuloma inguinale is treated with:",opts:["Azithromycin weekly for 3 weeks","Doxycycline 7 days","Ceftriaxone","Acyclovir"],correct:0},{q:"These conditions should be considered when:",opts:["Ulcers persist or classical treatment fails","Symptoms are mild","Only discharge is present","Only women are affected"],correct:0},{q:"All three conditions are:",opts:["Less common but important in persistent ulcers","Very common in all STI clinics","Always viral","Always asymptomatic"],correct:0}] },
+  // ---- Unit 20 ----
+  { n:20, title:"Gonorrhoea", terms:["Gonorrhoea","Neisseria gonorrhoeae","Ceftriaxone","Resistance"], lesson:`<p><strong>Cause</strong><br>Neisseria gonorrhoeae.</p><p><strong>Sites</strong><br>Urethra, cervix, rectum, pharynx, eye, pelvis, disseminated infection.</p><p><strong>Symptoms</strong><br>Men: discharge, dysuria, testicular pain. Women: often asymptomatic, vaginal discharge, cervicitis, pelvic pain, bleeding.</p><p><strong>Complications</strong><br>PID, infertility, ectopic pregnancy, epididymitis, ophthalmia neonatorum, disseminated infection.</p><p><strong>CI Considerations</strong><br>Partners must be treated. Reinfection is common. Resistance is a concern. Persistent symptoms need re-evaluation. HIV and syphilis testing should be offered.</p>`, quiz:[{q:"Gonorrhoea is caused by:",opts:["Neisseria gonorrhoeae","Treponema pallidum","Chlamydia trachomatis","HPV"],correct:0},{q:"A complication of untreated gonorrhoea in women is:",opts:["PID and infertility","Chancre","Gumma","Scabies"],correct:0},{q:"CI considerations for gonorrhoea include:",opts:["Partners must be treated","Only index case matters","No follow-up needed","Avoid HIV testing"],correct:0},{q:"Gonorrhoea resistance is a concern because:",opts:["It may cause treatment failure","It is always curable","It never changes","Resistance is not relevant"],correct:0},{q:"Which site can be infected with gonorrhoea?",opts:["Pharynx","Only urethra","Only cervix","Only skin"],correct:0}] },
+  // ---- Unit 21 ----
+  { n:21, title:"Chlamydia", terms:["Chlamydia","Chlamydia trachomatis","Doxycycline","Asymptomatic"], lesson:`<p><strong>Cause</strong><br>Chlamydia trachomatis.</p><p><strong>Symptoms</strong><br>Often asymptomatic. May cause urethritis, cervicitis, dysuria, vaginal discharge, pelvic pain, epididymitis, rectal infection.</p><p><strong>Complications</strong><br>PID, infertility, ectopic pregnancy, neonatal conjunctivitis, neonatal pneumonia.</p><p><strong>Treatment</strong><br>Usually treated with doxycycline-containing regimens in syndromic management. Avoid doxycycline in pregnancy, lactation, and children 16 years and under.</p><p><strong>CI Considerations</strong><br>Partners need treatment. Asymptomatic infection is common. Reinfection is common if partners untreated.</p>`, quiz:[{q:"Chlamydia is caused by:",opts:["Chlamydia trachomatis","Neisseria gonorrhoeae","Treponema pallidum","HIV"],correct:0},{q:"Chlamydia is often:",opts:["Asymptomatic","Always symptomatic","Always visible","Always painful"],correct:0},{q:"Treatment for chlamydia includes:",opts:["Doxycycline-containing regimens","BPG","Metronidazole","Acyclovir"],correct:0},{q:"Doxycycline should be avoided in:",opts:["Pregnancy, lactation, and children 16 and under","All adults","Only men","Only the elderly"],correct:0},{q:"Reinfection in chlamydia is common because:",opts:["Partners may not be treated","The infection is always cured","There is no transmission","Only index case matters"],correct:0}] },
+  // ---- Unit 22 ----
+  { n:22, title:"STI in Adolescents and Children", terms:["Adolescent","Child","Safeguarding","Confidentiality"], lesson:`<p><strong>Adolescents</strong><br>Adolescents need confidential, respectful care, age-appropriate counselling, screening for coercion or abuse, pregnancy assessment where relevant, HIV and syphilis testing, and partner management with safety considerations.</p><p><strong>Children</strong><br>STI in a child requires urgent safeguarding consideration. Possible causes: perinatal transmission, non-sexual transmission for some infections, sexual abuse, laboratory or diagnostic error, consensual activity in older adolescents depending on age and law.</p><p><strong>CI Actions for STI in Children</strong><br>Treat as priority. Notify supervisor. Follow safeguarding protocols. Avoid repeated interviewing. Protect child confidentiality. Coordinate with clinician and social services. Document carefully.</p>`, quiz:[{q:"Adolescents with STI need:",opts:["Confidential, respectful care","Public disclosure","No counselling","Only adult protocols"],correct:0},{q:"STI in a child requires:",opts:["Urgent safeguarding consideration","Only standard adult care","No investigation","Only partner treatment"],correct:0},{q:"CI actions for STI in children include:",opts:["Notify supervisor and follow safeguarding","Ignore the case","Only treat the child","Skip documentation"],correct:0},{q:"Possible cause of STI in a child is:",opts:["Sexual abuse","No possible cause","Always consensual","Always perinatal"],correct:0},{q:"Child confidentiality should be:",opts:["Protected","Not protected","Shared publicly","Ignored"],correct:0}] },
+  // ---- Unit 23 ----
+  { n:23, title:"Partner Management and Epidemiologic Treatment", terms:["Epidemiologic treatment","Critical period","Partner","Reinfection"], lesson:`<p><strong>Definition</strong><br>Epidemiologic treatment means treatment given to a known critical-period contact of an infectious STI, even if symptoms are absent.</p><p><strong>Why It Matters</strong><br>Contacts may be asymptomatic, be incubating infection, reinfect the index case, or continue community transmission.</p><p><strong>CI Role</strong><br>Identify critical-period contacts. Ensure contacts are examined. Ensure contacts are treated according to protocol. Document outcome. Follow up untreated or unlocated contacts. Discuss condoms, PrEP, HIV testing, and syphilis testing.</p>`, quiz:[{q:"Epidemiologic treatment is given to:",opts:["Contacts of infectious STI even without symptoms","Only symptomatic contacts","Only index cases","Only pregnant women"],correct:0},{q:"Why do contacts need treatment even without symptoms?",opts:["They may be asymptomatic and incubating","They are always immune","They never transmit","Only symptomatic contacts matter"],correct:0},{q:"CI role in partner management includes:",opts:["Identify and ensure contacts are examined and treated","Only treat index case","Avoid partner follow-up","Skip documentation"],correct:0},{q:"Untreated partners can:",opts:["Reinfect the index case","Always be immune","Never transmit","Only affect themselves"],correct:0},{q:"CI should discuss with contacts:",opts:["Condoms, PrEP, HIV and syphilis testing","Only treatment","Only payment","Only documentation"],correct:0}] },
+  // ---- Unit 24 ----
+  { n:24, title:"STI Coding", terms:["STI codes","A1","A2","B3","C13"], lesson:`<p><strong>Syphilis Codes</strong><br>A1: Primary syphilis, A2: Secondary syphilis, A3: Early latent syphilis, A4: Cardiovascular syphilis, A5: Neurological syphilis, A6: Late latent/other late syphilis, A7: Congenital syphilis under 1 year, A8: Congenital syphilis 1 year and older.</p><p><strong>Gonorrhoea Codes</strong><br>B1: Post-pubertal gonorrhoea, B2: Pre-pubertal gonorrhoea, B3: Ophthalmia neonatorum.</p><p><strong>Other STI Codes</strong><br>C1: Chancroid, C2: LGV, C3: Granuloma inguinale, C4: Non-gonococcal urethritis/cervicitis, C5: Non-specific genital infection with arthritis, C6: Trichomoniasis, C7: Candidiasis, C10: Herpes simplex virus, C11: Genital warts/HPV, C12: Molluscum contagiosum, C13: HIV infection, C14: Hepatitis B virus, C15: HTLV-1. D1: Other treponemal disease, D2: Other condition requiring treatment (e.g. MPox), D3: Other condition not requiring treatment.</p>`, quiz:[{q:"What is the code for primary syphilis?",opts:["A1","A2","B1","C13"],correct:0},{q:"What is the code for secondary syphilis?",opts:["A2","A1","B3","C10"],correct:0},{q:"What is the code for ophthalmia neonatorum?",opts:["B3","A7","C13","C14"],correct:0},{q:"What is the code for HIV infection?",opts:["C13","A1","B1","C14"],correct:0},{q:"What is the code for chancroid?",opts:["C1","C2","C3","C4"],correct:0}] },
+  // ---- Unit 25 ----
+  { n:25, title:"STI Clinical Summary Reporting", terms:["Reporting","Surveillance","Data quality","CI role"], lesson:`<p><strong>Purpose</strong><br>STI reporting helps the programme track disease trends, syndrome burden, treatment activity, priority cases, partner services, and public health response.</p><p><strong>CI Role</strong><br>The CI may support reviewing STI medical records, ensuring codes are correct, identifying priority referrals, checking completeness of forms, assisting with monthly summary preparation, and validating STI data with clinic and surveillance teams.</p><p><strong>Data Quality Requirements</strong><br>Reports must be complete, accurate, timely, consistent, and confidential.</p>`, quiz:[{q:"STI reporting helps track:",opts:["Disease trends and partner services","Only clinic attendance","Only staff performance","Only certificates"],correct:0},{q:"CI role in reporting includes:",opts:["Ensuring codes are correct","Only treating patients","Only field visits","Only counselling"],correct:0},{q:"Data quality requirements include:",opts:["Complete, accurate, timely, consistent, and confidential","Only timely","Only complete","Only confidential"],correct:0},{q:"CI may support reporting by:",opts:["Reviewing records and validating data","Avoiding documentation","Skipping data entry","Only counting cases"],correct:0},{q:"Why is STI reporting important?",opts:["It supports public health response","It is optional","It delays treatment","It only benefits researchers"],correct:0}] },
+  // ---- Unit 26 ----
+  { n:26, title:"Emerging and Re-Emerging STI Concerns", terms:["Antimicrobial resistance","MPox","Outbreak","Referral"], lesson:`<p><strong>Antimicrobial Resistant Gonorrhoea</strong><br>Concern: treatment failure, persistent symptoms, need for culture and sensitivity, public health follow-up.</p><p><strong>MPox and Other Conditions</strong><br>MPox may present with genital or anal lesions and can be coded under other conditions requiring treatment where applicable.</p><p><strong>CI Role</strong><br>Recognize when a case needs escalation. Refer suspected outbreaks. Maintain confidentiality. Support surveillance. Avoid panic or stigma.</p>`, quiz:[{q:"Antimicrobial resistant gonorrhoea may cause:",opts:["Treatment failure and persistent symptoms","Complete cure with all antibiotics","No public health concern","Only mild symptoms"],correct:0},{q:"MPox may present with:",opts:["Genital or anal lesions","Only respiratory symptoms","Only skin rash on arms","No symptoms"],correct:0},{q:"CI role in emerging concerns includes:",opts:["Refer suspected outbreaks and maintain confidentiality","Ignore cases","Only treat patients","Avoid surveillance"],correct:0},{q:"Resistant gonorrhoea requires:",opts:["Culture and sensitivity","No testing","Only clinical exam","Only symptom relief"],correct:0},{q:"CI should avoid in MPox response:",opts:["Panic and stigma","Confidentiality","Surveillance","Referral"],correct:0}] },
+  // ---- Unit 27 ----
+  { n:27, title:"Stress Management for CIs", terms:["Stress","Wellness","Debrief","Support"], lesson:`<p><strong>Why It Matters</strong><br>STI work can be emotionally demanding. Stressors include sensitive interviews, violence risk, stigma, difficult field visits, high workload, exposure to trauma, and pressure to meet targets.</p><p><strong>Practical Strategies</strong><br>Debrief with supervisor. Use team support. Keep boundaries. Document clearly. Plan field visits. Take breaks. Seek support early. Avoid carrying cases emotionally alone.</p>`, quiz:[{q:"Stressors for CIs include:",opts:["Sensitive interviews and high workload","Only paperwork","Only driving","Only meetings"],correct:0},{q:"A practical stress management strategy is:",opts:["Debrief with supervisor","Avoid all field visits","Work alone without breaks","Carry cases emotionally alone"],correct:0},{q:"Why is stress management important for CIs?",opts:["To maintain wellbeing and performance","It is not important","Only for other staff","Only for managers"],correct:0},{q:"Which is a recommended stress management technique?",opts:["Use team support and take breaks","Work 24/7","Never take breaks","Avoid speaking to colleagues"],correct:0},{q:"CIs should avoid:",opts:["Carrying cases emotionally alone","Debriefing","Taking breaks","Team support"],correct:0}] },
+  // ---- Unit 28 ----
+  { n:28, title:"Treatment Summary Table", terms:["Treatment","Summary","Syndrome","Drugs"], lesson:`<p><strong>Urethral discharge</strong>: Ceftriaxone 1 g IM stat + doxycycline 100 mg BID 7 days</p><p><strong>Persistent urethral discharge</strong>: Reassess adherence/re-exposure; test if possible; re-treat per protocol</p><p><strong>Cervico-vaginal discharge with cervicitis risk</strong>: Ceftriaxone 1 g IM + doxycycline 100 mg BID 7 days + metronidazole 500 mg BID 7 days</p><p><strong>If cervicitis present</strong>: Extend doxycycline and metronidazole to 14 days</p><p><strong>BV</strong>: Metronidazole 400/500 mg BID 7 days</p><p><strong>Trichomoniasis</strong>: Metronidazole 2 g stat OR 400/500 mg BID 7 days</p><p><strong>Candidiasis</strong>: Clotrimazole 100 mg nightly 7 nights OR miconazole 200 mg nightly 3 nights</p><p><strong>Anal discharge</strong>: Ceftriaxone 1 g IM + doxycycline 100 mg BID 7 days</p><p><strong>HSV</strong>: Acyclovir 400 mg TID 7–10 days</p><p><strong>Primary/secondary/early latent syphilis</strong>: BPG 2.4 MU IM single dose</p><p><strong>Late latent/tertiary syphilis without neuro/ocular involvement</strong>: BPG 2.4 MU IM weekly for 3 weeks</p><p><strong>Maternal early syphilis</strong>: BPG 2.4 MU IM single dose</p><p><strong>Maternal late latent/tertiary</strong>: BPG 2.4 MU IM weekly for 3 doses</p><p><strong>Chancroid</strong>: Azithromycin 1 g single dose</p><p><strong>LGV</strong>: Doxycycline 100 mg BID 21 days</p><p><strong>Granuloma inguinale</strong>: Azithromycin 1 g weekly 3 weeks</p>`, quiz:[{q:"Urethral discharge treatment is:",opts:["Ceftriaxone + doxycycline","BPG","Metronidazole","Acyclovir"],correct:0},{q:"Trichomoniasis treatment is:",opts:["Metronidazole","Ceftriaxone","BPG","Doxycycline"],correct:0},{q:"HSV treatment is:",opts:["Acyclovir","Ceftriaxone","Metronidazole","BPG"],correct:0},{q:"Early syphilis treatment is:",opts:["BPG 2.4 MU IM single dose","Doxycycline 7 days","Ceftriaxone","Metronidazole"],correct:0},{q:"Chancroid treatment is:",opts:["Azithromycin 1 g single dose","BPG","Ceftriaxone 7 days","Metronidazole"],correct:0}] },
+  // ---- Unit 29 ----
+  { n:29, title:"Field Algorithm: STI Case to CI Action", terms:["Algorithm","CI action","Referral","Documentation"], lesson:`<p>1. STI case diagnosed. 2. Determine syndrome and code. 3. Check if priority condition. 4. Ensure HIV and syphilis screening offered. 5. Confirm treatment given or referral made. 6. Interview index case if required. 7. Determine critical period. 8. Elicit contacts. 9. Assess IPV/social harm. 10. Initiate Field Records. 11. Notify contacts safely. 12. Refer contacts for examination, testing, and treatment. 13. Document outcomes. 14. Submit reports. 15. Close case with supervisor review.</p>`, quiz:[{q:"What is the first step in the STI case to CI action algorithm?",opts:["STI case diagnosed","Close case","Notify contacts","Elicit contacts"],correct:0},{q:"When should IPV/social harm be assessed?",opts:["Before notifying contacts","After closure","Never","Only at the end"],correct:0},{q:"What should be done after eliciting contacts?",opts:["Initiate Field Records","Close case","Skip documentation","Avoid partner treatment"],correct:0},{q:"Field Records should be initiated:",opts:["After eliciting contacts","Before diagnosis","After closure","Never"],correct:0},{q:"The final step in the algorithm is:",opts:["Close case with supervisor review","Diagnose case","Elicit contacts","Notify contacts"],correct:0}] },
+  // ---- Unit 30 ----
+  { n:30, title:"Jamaican Field Scenarios – Urethral Discharge", terms:["Urethral discharge","Partners","PrEP","HIV"], lesson:`<p><strong>Scenario: Urethral Discharge in a 19-Year-Old Male</strong><br>A 19-year-old male presents with urethral discharge and dysuria. He reports two partners in the last month.</p><p><strong>Correct CI actions:</strong> Ensure clinician treats for gonorrhoea and chlamydia. Confirm HIV and syphilis testing offered. Elicit partners. Explain partner treatment. Discuss condom use. Assess PrEP eligibility. Document referral and outcomes.</p><p><strong>Common mistake:</strong> Treating only the index client and not partners.</p>`, quiz:[{q:"What is the first correct CI action for urethral discharge?",opts:["Ensure clinician treats for gonorrhoea and chlamydia","Close the case","Ignore partners","Skip HIV testing"],correct:0},{q:"What should the CI confirm?",opts:["HIV and syphilis testing offered","Only treatment","Only age","Only address"],correct:0},{q:"What should the CI elicit?",opts:["Partners","Only symptoms","Only medication","Only payment"],correct:0},{q:"What should be discussed with the client?",opts:["Condom use and PrEP eligibility","Only treatment","Only payment","Only documentation"],correct:0},{q:"A common mistake is:",opts:["Treating only index client","Treating partners","Offering HIV testing","Discussing condoms"],correct:0}] },
+  // ---- Unit 31 ----
+  { n:31, title:"Jamaican Field Scenarios – Pregnant Woman with Reactive Syphilis", terms:["Pregnancy","Syphilis","BPG","Partner"], lesson:`<p><strong>Scenario: Pregnant Woman with Reactive Syphilis</strong><br>A pregnant woman screens reactive at ANC.</p><p><strong>Correct CI actions:</strong> Treat as priority. Confirm BPG treatment. Interview privately. Elicit husband/partner and any other contacts. Ensure partner testing and treatment. Support follow-up to protect baby. Document and report.</p><p><strong>Common mistake:</strong> Waiting for delivery before investigation.</p>`, quiz:[{q:"What is the first correct CI action?",opts:["Treat as priority","Wait for delivery","Ignore result","Only call once"],correct:0},{q:"What should the CI confirm?",opts:["BPG treatment","Only diagnosis","Only address","Only age"],correct:0},{q:"Who should the CI interview?",opts:["Mother privately","Mother with family","Only partner","Only baby"],correct:0},{q:"What should the CI elicit?",opts:["Partner(s)","Only symptoms","Only payment","Only documentation"],correct:0},{q:"A common mistake is:",opts:["Waiting for delivery","Treating as priority","Interviewing privately","Eliciting partners"],correct:0}] },
+  // ---- Unit 32 ----
+  { n:32, title:"Jamaican Field Scenarios – Anal Discharge in MSM Client", terms:["Anal discharge","MSM","PrEP","Non-judgmental"], lesson:`<p><strong>Scenario: Anal Discharge in MSM Client</strong><br>A male client reports anal discharge after receptive anal sex.</p><p><strong>Correct CI actions:</strong> Use non-judgmental language. Ensure anal discharge algorithm applied. Offer HIV and syphilis testing. Discuss PrEP. Elicit contacts safely. Assess stigma and social harm.</p><p><strong>Common mistake:</strong> Assuming he has only female partners or avoiding anal exposure questions.</p>`, quiz:[{q:"What is the first correct CI action?",opts:["Use non-judgmental language","Assume sexual orientation","Avoid anal questions","Ignore the client"],correct:0},{q:"What should be offered?",opts:["HIV and syphilis testing","Only hepatitis testing","No testing","Only eye exam"],correct:0},{q:"What should be discussed?",opts:["PrEP","Only treatment","Only payment","Only documentation"],correct:0},{q:"What should be assessed?",opts:["Stigma and social harm","Only income","Only education","Only occupation"],correct:0},{q:"A common mistake is:",opts:["Avoiding anal exposure questions","Offering HIV testing","Discussing PrEP","Using non-judgmental language"],correct:0}] },
+  // ---- Unit 33 ----
+  { n:33, title:"Jamaican Field Scenarios – Persistent Vaginal Discharge", terms:["Persistent","Reinfection","Partner","Referral"], lesson:`<p><strong>Scenario: Persistent Vaginal Discharge</strong><br>A woman returns after treatment with persistent discharge.</p><p><strong>Correct CI actions:</strong> Ask if treatment was completed. Ask if partner was treated. Ask about unprotected sex after treatment. Refer for clinician reassessment. Consider reinfection. Support partner management.</p><p><strong>Common mistake:</strong> Assuming drug failure before checking partner treatment.</p>`, quiz:[{q:"What should the CI ask first?",opts:["If treatment was completed and partner was treated","Only about symptoms","Only about income","Only about education"],correct:0},{q:"What should be considered?",opts:["Reinfection","Drug resistance only","Pregnancy only","Only age"],correct:0},{q:"What should be supported?",opts:["Partner management","Only index treatment","No follow-up","Only documentation"],correct:0},{q:"What is a common mistake?",opts:["Assuming drug failure before checking partner treatment","Checking partner treatment","Referring for reassessment","Supporting partner management"],correct:0},{q:"What should the CI refer for?",opts:["Clinician reassessment","No referral","Only counselling","Only eye exam"],correct:0}] },
+  // ---- Unit 34 ----
+  { n:34, title:"Jamaican Field Scenarios – Ophthalmia Neonatorum", terms:["ON","Newborn","Mother","Male partners"], lesson:`<p><strong>Scenario: Ophthalmia Neonatorum</strong><br>A newborn presents with eye discharge.</p><p><strong>Correct CI actions:</strong> Treat as priority. Ensure baby evaluated. Investigate mother. Identify recent male partners. Ensure epidemiologic treatment of male partners. Complete ON report. Refer severe cases.</p><p><strong>Common mistake:</strong> Treating baby only and not investigating mother/partners.</p>`, quiz:[{q:"What is the first correct CI action?",opts:["Treat as priority","Ignore the case","Only treat baby","Skip investigation"],correct:0},{q:"What should the CI investigate?",opts:["Mother and male partners","Only baby","Only nurse","Only doctor"],correct:0},{q:"What should male partners receive?",opts:["Epidemiologic treatment","No treatment","Only counselling","Only testing"],correct:0},{q:"What should be completed?",opts:["ON report","Only baby records","Only mother records","No documentation"],correct:0},{q:"A common mistake is:",opts:["Treating baby only","Investigating mother","Treating partners","Completing report"],correct:0}] },
+  // ---- Unit 35 ----
+  { n:35, title:"Exam Preparation – Key Facts", terms:["Exam","Key facts","High-yield"], lesson:`<p><strong>Key Facts to Memorize</strong></p><ul><li>STI syndromic management treats based on syndrome.</li><li>Urethral discharge is treated for gonorrhoea and chlamydia.</li><li>All suspected STI clients should be offered HIV and syphilis testing.</li><li>Partners must be examined and treated.</li><li>Persistent symptoms often mean reinfection or untreated partner.</li><li>Syphilis is staged before treatment.</li><li>BPG is first-line treatment for syphilis.</li><li>Penicillin is required in pregnancy.</li><li>Congenital syphilis is a priority investigation.</li><li>Ophthalmia neonatorum requires investigation of mother and male partners.</li><li>Anal discharge requires non-judgmental exposure-site history.</li><li>STI in children requires safeguarding.</li><li>Doxycycline is avoided in pregnancy, lactation, and persons 16 years and under.</li><li>Critical period guides contact elicitation.</li><li>PrEP should be considered for clients with repeated STI risk.</li></ul>`, quiz:[{q:"Syndromic management treats based on:",opts:["Syndrome","Lab results","Age","Gender"],correct:0},{q:"Urethral discharge is treated for:",opts:["Gonorrhoea and chlamydia","Syphilis","HIV","Candidiasis"],correct:0},{q:"All STI clients should be offered:",opts:["HIV and syphilis testing","Only treatment","Only condoms","Only counselling"],correct:0},{q:"Partners must be:",opts:["Examined and treated","Ignored","Only tested","Only counselled"],correct:0},{q:"Persistent symptoms often mean:",opts:["Reinfection or untreated partner","Drug resistance only","Pregnancy only","Age only"],correct:0}] },
+  // ---- Unit 36 ----
+  { n:36, title:"Flashcards – Core Concepts", terms:["Flashcards","Definitions","Key terms"], lesson:`<p><strong>Flashcards</strong></p><ol><li>Q: What is syndromic management? A: Treatment based on groups of signs and symptoms rather than waiting for lab confirmation.</li><li>Q: What infections are covered in urethral discharge treatment? A: Gonorrhoea and chlamydia.</li><li>Q: What should all suspected STI clients be offered? A: HIV and syphilis testing.</li><li>Q: What is the first-line syphilis treatment? A: Benzathine Penicillin G.</li><li>Q: What is the treatment for early infectious syphilis? A: BPG 2.4 MU IM single dose.</li><li>Q: What is the treatment for late latent syphilis? A: BPG 2.4 MU IM weekly for 3 weeks.</li><li>Q: Why are partners treated? A: To prevent reinfection and stop transmission.</li><li>Q: What does persistent discharge often suggest? A: Non-adherence, untreated partner, reinfection, or resistance.</li><li>Q: What is PID? A: Pelvic inflammatory disease involving upper female genital tract infection.</li><li>Q: What STI condition in newborns affects the eye? A: Ophthalmia neonatorum.</li></ol>`, quiz:[{q:"What is syndromic management?",opts:["Treatment based on signs and symptoms groups","Treatment based only on labs","Treatment based only on age","Treatment based only on gender"],correct:0},{q:"What is the first-line syphilis treatment?",opts:["Benzathine Penicillin G","Doxycycline","Ceftriaxone","Metronidazole"],correct:0},{q:"Why are partners treated?",opts:["To prevent reinfection","To punish them","To collect fees","To avoid documentation"],correct:0},{q:"What does persistent discharge suggest?",opts:["Untreated partner or reinfection","Complete cure","No transmission","Always resistance"],correct:0},{q:"What is PID?",opts:["Pelvic inflammatory disease","Peripheral infection disease","Public infectious disease","Private inflammatory disease"],correct:0}] },
+  // ---- Unit 37 ----
+  { n:37, title:"Multiple Choice Questions – Set 1", terms:["MCQ","Assessment","Knowledge check"], lesson:`<p><strong>Question 1</strong><br>What is the main purpose of syndromic STI management?<br>A. To delay treatment until lab results return<br>B. To treat based on symptoms and signs at first encounter<br>C. To avoid partner notification<br>D. To replace all laboratory testing permanently<br><strong>Correct: B</strong></p><p><strong>Question 2</strong><br>A male client has urethral discharge. The recommended syndromic treatment covers:<br>A. HIV only<br>B. Gonorrhoea and chlamydia<br>C. Syphilis only<br>D. Candidiasis only<br><strong>Correct: B</strong></p><p><strong>Question 3</strong><br>Which test should be routinely offered to suspected STI clients?<br>A. HIV and syphilis testing<br>B. Malaria only<br>C. Pregnancy test only<br>D. Eye test only<br><strong>Correct: A</strong></p><p><strong>Question 4</strong><br>A woman has lower abdominal pain, cervical motion tenderness, and vaginal discharge. This suggests:<br>A. PID<br>B. Scabies<br>C. Candidiasis only<br>D. Herpes zoster<br><strong>Correct: A</strong></p><p><strong>Question 5</strong><br>Which situation requires urgent referral in lower abdominal pain syndrome?<br>A. Mild discharge only<br>B. Temperature ≥ 38°C or pregnancy<br>C. Itching only<br>D. Condom breakage only<br><strong>Correct: B</strong></p>`, quiz:[{q:"What is the main purpose of syndromic STI management?",opts:["Treat based on symptoms and signs at first encounter","Delay treatment","Avoid partner notification","Replace all testing"],correct:0},{q:"Urethral discharge treatment covers:",opts:["Gonorrhoea and chlamydia","HIV","Syphilis","Candidiasis"],correct:0},{q:"Suspected STI clients should be offered:",opts:["HIV and syphilis testing","Malaria testing","Pregnancy testing only","Eye exam only"],correct:0},{q:"Lower abdominal pain with cervical motion tenderness suggests:",opts:["PID","Scabies","Candidiasis","Herpes"],correct:0},{q:"Which situation requires urgent referral in lower abdominal pain?",opts:["Temperature ≥ 38°C or pregnancy","Mild discharge","Itching","Condom breakage"],correct:0}] },
+  // ---- Unit 38 ----
+  { n:38, title:"Multiple Choice Questions – Set 2", terms:["MCQ","Assessment","Knowledge check"], lesson:`<p><strong>Question 6</strong><br>Primary syphilis is coded as:<br>A. A1<br>B. A2<br>C. B1<br>D. C13<br><strong>Correct: A</strong></p><p><strong>Question 7</strong><br>Secondary syphilis is coded as:<br>A. A1<br>B. A2<br>C. C10<br>D. B3<br><strong>Correct: B</strong></p><p><strong>Question 8</strong><br>The first-line treatment for early infectious syphilis is:<br>A. Fluconazole<br>B. BPG 2.4 MU IM single dose<br>C. Metronidazole gel<br>D. Acyclovir only<br><strong>Correct: B</strong></p><p><strong>Question 9</strong><br>Which medicine should be avoided in pregnancy, lactation, and persons 16 years and under?<br>A. Doxycycline<br>B. BPG<br>C. Ceftriaxone<br>D. Acyclovir<br><strong>Correct: A</strong></p><p><strong>Question 10</strong><br>A genital ulcer with vesicles and recurrence at the same site suggests:<br>A. Herpes simplex virus<br>B. Candidiasis<br>C. BV<br>D. Pubic lice<br><strong>Correct: A</strong></p>`, quiz:[{q:"Primary syphilis is coded as:",opts:["A1","A2","B1","C13"],correct:0},{q:"Secondary syphilis is coded as:",opts:["A2","A1","C10","B3"],correct:0},{q:"Treatment for early infectious syphilis is:",opts:["BPG 2.4 MU IM single dose","Fluconazole","Metronidazole","Acyclovir"],correct:0},{q:"Which medicine should be avoided in pregnancy and children under 16?",opts:["Doxycycline","BPG","Ceftriaxone","Acyclovir"],correct:0},{q:"A genital ulcer with vesicles suggests:",opts:["Herpes simplex virus","Candidiasis","BV","Pubic lice"],correct:0}] },
+  // ---- Unit 39 ----
+  { n:39, title:"Practical Exercises", terms:["Exercise","Application","Critical thinking"], lesson:`<p><strong>Exercise 1: Urethral Discharge</strong><br>A 21-year-old male has urethral discharge and dysuria. He had two partners in the last month and used condoms sometimes. Expected CI actions: Confirm clinician management. Ensure HIV and syphilis testing. Elicit partners. Explain partner treatment. Discuss condoms. Assess PrEP eligibility. Document and follow up.</p><p><strong>Exercise 2: Persistent Vaginal Discharge</strong><br>A woman returns with persistent vaginal discharge after treatment. Her partner was never treated. Expected CI actions: Identify likely reinfection risk. Refer for clinical reassessment. Support partner referral. Explain importance of partner treatment. Discuss abstinence/condoms until treatment complete.</p><p><strong>Exercise 3: Reactive Syphilis in Pregnancy</strong><br>A pregnant woman has reactive syphilis screening. Expected CI actions: Prioritize investigation. Confirm BPG treatment. Interview privately. Elicit partner(s). Arrange partner testing and treatment. Complete documentation and follow-up.</p>`, quiz:[{q:"In urethral discharge exercise, what should CI ensure?",opts:["HIV and syphilis testing offered","Only treatment","Only payment","Only documentation"],correct:0},{q:"In persistent vaginal discharge, what is a likely cause?",opts:["Partner not treated","Drug resistance only","Pregnancy only","Age only"],correct:0},{q:"In reactive syphilis in pregnancy, what should CI confirm?",opts:["BPG treatment","Only diagnosis","Only age","Only address"],correct:0},{q:"In urethral discharge, what should be discussed?",opts:["Condoms and PrEP","Only treatment","Only payment","Only documentation"],correct:0},{q:"In persistent discharge, what should be supported?",opts:["Partner referral","Only index treatment","No follow-up","Only counselling"],correct:0}] },
+  // ---- Unit 40 ----
+  { n:40, title:"Quality Assurance and Component Completion", terms:["Quality","Completion","Next steps"], lesson:`<p><strong>Quality Assurance Confirmation</strong><br>This Component II follows the CI Curriculum STI component, uses the 2026 STI Handbook as clinical authority, uses the 2025 Field Guide for CI actions and reporting, includes STI history and sexual history, syndromic management, updated treatment summary, syphilis, maternal syphilis, congenital syphilis, ON, adolescent and child STI concerns, partner management, STI coding, Jamaican scenarios, exam preparation, flashcards, MCQs, and practical exercises. It is suitable for CI training and exam preparation.</p><p><strong>Component Completion Statement</strong><br>Component II gives the trainee the STI foundation needed to understand clinical syndromes, support treatment completion, identify contacts, assist with partner management, complete reports accurately, and work safely within Jamaica's STI/HIV public health response. The trainee is now prepared to move to Component III: HIV and Viral STIs and Component IV: Field Investigation, DIA, Documentation, and Case Closure.</p>`, quiz:[{q:"Component II uses which clinical authority?",opts:["2026 STI Handbook","2015 Field Guide","WHO 2020","CDC 2018"],correct:0},{q:"Which component is next?",opts:["Component III: HIV and Viral STIs","Component I","No further components","Only clinical practice"],correct:0},{q:"Component II includes:",opts:["STI history, syndromic management, and partner management","Only syphilis","Only gonorrhoea","Only HIV"],correct:0},{q:"CI actions in Component II follow:",opts:["2025 Field Guide","WHO 2024","CDC 2020","PAHO 2019"],correct:0},{q:"After Component II, the trainee is prepared for:",opts:["Component III and IV","Only field work","Only clinical work","No further training"],correct:0}] }
+];
+
+// ============================================================
+// APP ENGINE
+// ============================================================
+const STORAGE_KEY = 'jasdisCompII';
+let state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{"completed":{},"scores":{},"reviewed":{},"scrollPos":0,"voiceName":"","rate":1,"pitch":1}');
+let currentSpeech = null;
+let synth = window.speechSynthesis;
+
+function buildDropdown() {
+  const dropdown = document.getElementById('unitDropdown');
+  dropdown.innerHTML = allUnits.map(u =>
+    `<option value="#unit-${u.n}">${u.n}. ${u.title} ${state.completed[u.n] ? '✅' : ''}</option>`
+  ).join('');
+  dropdown.onchange = function() {
+    const target = this.value;
+    if (target) {
+      document.querySelector(target)?.scrollIntoView({ behavior: 'smooth' });
+      this.blur();
+    }
+  };
+}
+
+function renderUnits() {
+  const container = document.getElementById('unitsContainer');
+  container.innerHTML = allUnits.map(u => {
+    const completed = state.completed[u.n];
+    const score = state.scores[u.n];
+    const reviewed = state.reviewed[u.n];
+    const quizHtml = u.quiz.map((q, qi) => `
+      <div class="q" data-unit="${u.n}" data-q="${qi}">
+        <div><strong>${qi+1}. ${q.q}</strong></div>
+        ${q.opts.map((o, oi) => `
+          <label><input type="radio" name="q_${u.n}_${qi}" value="${oi}"> ${o}</label>
+        `).join('')}
+        <div id="fb_${u.n}_${qi}" class="feedback" style="display:none;"></div>
+      </div>
+    `).join('');
+    const pass = completed ? '✅ Passed' : (score ? `Score: ${score}%` : 'Not attempted');
+    return `
+      <div class="unit-block" id="unit-${u.n}">
+        <h2>${u.n}. ${u.title}</h2>
+        <div class="terms">${u.terms.map(t => `<span>#${t}</span>`).join('')}</div>
+        <div class="lesson">${u.lesson}</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin:12px 0;">
+          <button class="btn outline" onclick="markReviewed(${u.n})">${reviewed ? '✅ Reviewed' : '📖 Mark reviewed'}</button>
+          <button class="btn outline" onclick="toggleQuiz(${u.n})">📝 Check quiz</button>
+          ${completed ? `<button class="btn ok" onclick="generateCert(${u.n})">📜 Certificate</button>` : ''}
+          <span style="margin-left:auto;font-size:14px;color:var(--muted);">${pass}</span>
+        </div>
+        <div class="quiz-wrap" id="quizWrap_${u.n}">
+          ${quizHtml}
+          <button class="btn ok" onclick="gradeQuiz(${u.n})" style="margin:8px 0;">Submit quiz</button>
+          <div id="quizResult_${u.n}" style="margin-top:10px;"></div>
+        </div>
+        ${completed ? `<div class="cert-box">✅ Certificate unlocked. Click the Certificate button above to download.</div>` : ''}
+      </div>
+    `;
+  }).join('');
+  if (state.scrollPos) window.scrollTo(0, state.scrollPos);
+  updateProgress();
+  buildDropdown();
+  loadVoices();
+}
+
+function toggleQuiz(n) {
+  const wrap = document.getElementById(`quizWrap_${n}`);
+  if (wrap) {
+    const isHidden = wrap.style.display === 'none' || getComputedStyle(wrap).display === 'none';
+    wrap.style.display = isHidden ? 'block' : 'none';
+  }
+}
+
+function markReviewed(n) {
+  state.reviewed[n] = true;
+  saveState();
+  renderUnits();
+}
+
+function gradeQuiz(n) {
+  const u = allUnits.find(x => x.n === n);
+  if (!u) return;
+  let right = 0;
+  u.quiz.forEach((q, qi) => {
+    const sel = document.querySelector(`input[name="q_${n}_${qi}"]:checked`);
+    const fb = document.getElementById(`fb_${n}_${qi}`);
+    if (sel && parseInt(sel.value) === q.correct) {
+      right++;
+      if (fb) { fb.style.display = 'block'; fb.className = 'feedback ok'; fb.textContent = '✅ Correct.'; }
+    } else {
+      if (fb) { fb.style.display = 'block'; fb.className = 'feedback bad'; fb.textContent = '❌ Incorrect. The correct answer is option ' + (q.correct+1) + '.'; }
+    }
+  });
+  const score = Math.round(right / u.quiz.length * 100);
+  state.scores[n] = Math.max(state.scores[n] || 0, score);
+  const pass = score >= 80 && state.reviewed[n];
+  if (pass) state.completed[n] = new Date().toISOString();
+  saveState();
+  const res = document.getElementById(`quizResult_${n}`);
+  if (res) {
+    res.innerHTML = `<div class="feedback ${pass ? 'ok' : 'bad'}"><strong>Score: ${score}%</strong> — ${pass ? '🎉 Passed! Certificate unlocked.' : 'Need ≥80% and reviewed. Retry after reviewing.'}</div>`;
+  }
+  renderUnits();
+  updateProgress();
+}
+
+function generateCert(n) {
+  if (!state.completed[n]) return alert('Complete the quiz first (≥80% and reviewed).');
+  const name = prompt('Enter your full name for the certificate:', state.name || 'Learner');
+  if (!name) return;
+  state.name = name;
+  saveState();
+  const u = allUnits.find(x => x.n === n);
+  const date = new Date(state.completed[n]).toLocaleDateString();
+  const id = 'JASDIS-CII-'+String(n).padStart(2,'0')+'-'+Date.now().toString(36).toUpperCase();
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  doc.setFillColor(245,245,245);
+  doc.rect(0,0,210,297,'F');
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(22);
+  doc.text('Certificate of Completion', 105, 40, { align: 'center' });
+  doc.setFontSize(12);
+  doc.setFont('helvetica','normal');
+  doc.text('This certifies that', 105, 65, { align: 'center' });
+  doc.setFontSize(18);
+  doc.setFont('helvetica','bold');
+  doc.text(name, 105, 80, { align: 'center' });
+  doc.setFontSize(12);
+  doc.setFont('helvetica','normal');
+  doc.text('has successfully completed Unit '+n+': '+u.title, 105, 98, { align: 'center' });
+  doc.text('of Component II – STI Clinical Management', 105, 110, { align: 'center' });
+  doc.text('Awarded: 1 CME hour', 105, 125, { align: 'center' });
+  doc.text('Date: '+date, 105, 140, { align: 'center' });
+  doc.text('Certificate ID: '+id, 105, 152, { align: 'center' });
+  doc.setFontSize(10);
+  doc.text('Jamaica Association of Social Disease Intervention Specialists (JASDIS)', 105, 180, { align: 'center' });
+  doc.text('This certificate is issued upon successful completion of the self-study module.', 105, 195, { align: 'center' });
+  doc.text('It does not replace MOHW policy, supervisor direction, or official clinical updates.', 105, 207, { align: 'center' });
+  doc.line(30, 220, 180, 220);
+  doc.text('Dr. Nicola Skyers, Programme Director (representative)', 105, 235, { align: 'center' });
+  doc.text('Ministry of Health & Wellness, Jamaica', 105, 245, { align: 'center' });
+  doc.save('JASDIS_Unit_'+n+'_Certificate.pdf');
+}
+
+function updateProgress() {
+  const done = Object.keys(state.completed).filter(k => state.completed[k]).length;
+  document.getElementById('progressLabel').textContent = `${done}/${allUnits.length}`;
+}
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+// ============================================================
+// VOICE – READS ONLY LESSON CONTENT
+// ============================================================
+function loadVoices() {
+  const sel = document.getElementById('voiceSelect');
+  if (!sel) return;
+  const voices = synth.getVoices();
+  if (!voices.length) { setTimeout(loadVoices, 200); return; }
+  const current = state.voiceName || '';
+  sel.innerHTML = voices.map(v => `<option value="${v.name}" ${v.name === current ? 'selected' : ''}>${v.name} (${v.lang})</option>`).join('');
+  if (!state.voiceName && sel.options.length) sel.selectedIndex = 0;
+}
+
+function getSelectedVoice() {
+  const sel = document.getElementById('voiceSelect');
+  const voices = synth.getVoices();
+  const name = sel ? sel.value : '';
+  return voices.find(v => v.name === name) || voices[0] || null;
+}
+
+function speakAll() {
+  stopSpeech();
+  const blocks = document.querySelectorAll('.unit-block');
+  let textToSpeak = '';
+  blocks.forEach(block => {
+    const title = block.querySelector('h2')?.textContent || '';
+    const lesson = block.querySelector('.lesson')?.textContent || '';
+    if (title || lesson) {
+      textToSpeak += title + '. ' + lesson + '\n\n';
+    }
+  });
+  if (!textToSpeak) {
+    document.getElementById('voiceStatus').textContent = '❌ no lesson content found';
+    return;
+  }
+  const utter = new SpeechSynthesisUtterance(textToSpeak);
+  const voice = getSelectedVoice();
+  if (voice) utter.voice = voice;
+  utter.rate = parseFloat(document.getElementById('rateControl')?.value || 1);
+  utter.pitch = parseFloat(document.getElementById('pitchControl')?.value || 1);
+  utter.onstart = () => { document.getElementById('voiceStatus').textContent = '🔊 reading lessons...'; };
+  utter.onend = () => { document.getElementById('voiceStatus').textContent = '⏹ finished'; };
+  utter.onerror = () => { document.getElementById('voiceStatus').textContent = '❌ error'; };
+  currentSpeech = utter;
+  synth.speak(utter);
+}
+
+function pauseSpeech() { if (synth.speaking) synth.pause(); document.getElementById('voiceStatus').textContent = '⏸ paused'; }
+function resumeSpeech() { if (synth.paused) synth.resume(); document.getElementById('voiceStatus').textContent = '▶️ playing'; }
+function stopSpeech() { synth.cancel(); currentSpeech = null; document.getElementById('voiceStatus').textContent = '⏹ stopped'; }
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+function scrollToTop() { window.scrollTo({top:0, behavior:'smooth'}); }
+function toggleDark() { document.documentElement.classList.toggle('dark'); }
+function resetProgress() { if (confirm('Reset all progress?')) { state = {completed:{}, scores:{}, reviewed:{}, scrollPos:0, voiceName:'', rate:1, pitch:1}; saveState(); renderUnits(); } }
+
+window.addEventListener('scroll', () => {
+  const pos = window.scrollY;
+  state.scrollPos = pos;
+  saveState();
+  const pct = Math.round(pos / (document.documentElement.scrollHeight - window.innerHeight) * 100);
+  document.getElementById('scrollProgress').textContent = `📌 ${isNaN(pct) ? 0 : pct}%`;
+});
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  buildDropdown();
+  renderUnits();
+  document.getElementById('playBtn').addEventListener('click', speakAll);
+  document.getElementById('pauseBtn').addEventListener('click', pauseSpeech);
+  document.getElementById('resumeBtn').addEventListener('click', resumeSpeech);
+  document.getElementById('stopBtn').addEventListener('click', stopSpeech);
+  document.getElementById('voiceSelect').addEventListener('change', (e) => { state.voiceName = e.target.value; saveState(); });
+  document.getElementById('rateControl').addEventListener('change', (e) => { state.rate = parseFloat(e.target.value); saveState(); });
+  document.getElementById('pitchControl').addEventListener('change', (e) => { state.pitch = parseFloat(e.target.value); saveState(); });
+  if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = loadVoices;
+  setTimeout(loadVoices, 300);
+  document.getElementById('rateControl').value = state.rate || 1;
+  document.getElementById('pitchControl').value = state.pitch || 1;
+  if (localStorage.getItem('jasdisDark') === '1') document.documentElement.classList.add('dark');
+});
+</script>
+</body>
+</html>
